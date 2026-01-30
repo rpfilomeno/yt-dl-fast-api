@@ -3,6 +3,8 @@ import mimetypes
 import random
 import yt_dlp
 import time
+import asyncio
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.exceptions import HTTPException
 from fastapi.responses import FileResponse, Response
@@ -12,7 +14,7 @@ from yt_dlp.postprocessor import FFmpegPostProcessor
 
 
 download_path = os.environ.get('DOWNLOAD_PATH') or './downloads'
-port = os.environ.get('PORT') or '80'
+port = os.environ.get('PORT') or '8000'
 ffmpeg_location = os.environ.get('FFMPEG_LOCATION') or '/usr/bin/ffmpeg'
 
 # Ensure download directory exists
@@ -36,7 +38,39 @@ def generate_random_file_name():
     return f"{timestamp_ms}{random_number}"
 
 
-app = FastAPI()
+async def cleanup_old_files():
+    while True:
+        try:
+            now = time.time()
+            cutoff = now - 3600  # 1 hour ago
+            
+            if os.path.exists(download_path):
+                for filename in os.listdir(download_path):
+                    file_path = os.path.join(download_path, filename)
+                    if os.path.isfile(file_path):
+                        if os.path.getmtime(file_path) < cutoff:
+                            os.remove(file_path)
+                            print(f"Deleted old file: {filename}")
+        except Exception as e:
+            print(f"Cleanup error: {e}")
+        
+        await asyncio.sleep(600)  # Run every 10 minutes
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Start cleanup task
+    cleanup_task = asyncio.create_task(cleanup_old_files())
+    yield
+    # Shutdown: Cancel cleanup task
+    cleanup_task.cancel()
+    try:
+        await cleanup_task
+    except asyncio.CancelledError:
+        pass
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.mount("/downloads", StaticFiles(directory=download_path), name="downloads")
 
