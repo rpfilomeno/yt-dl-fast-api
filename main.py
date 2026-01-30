@@ -77,7 +77,6 @@ def get_transcripts(url: str):
             'key': 'FFmpegSubtitlesConvertor',
             'format': 'srt',
         }],
-        'quiet': True,
         'no_warnings': True,
     }
 
