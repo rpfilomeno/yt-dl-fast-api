@@ -8,15 +8,12 @@ from pydantic import BaseModel
 from yt_dlp.postprocessor import FFmpegPostProcessor
 
 
-download_path = os.environ.get('DOWNLOAD_PATH')
-port = os.environ.get('PORT')
-ffmpeg_location = os.environ.get('FFMPEG_LOCATION')
+download_path = os.environ.get('DOWNLOAD_PATH') or './downloads'
+port = os.environ.get('PORT') or '80'
+ffmpeg_location = os.environ.get('FFMPEG_LOCATION') or '/usr/bin/ffmpeg'
 
-
-if download_path is None \
-        or port is None\
-        or ffmpeg_location is None:
-    raise Exception('application environment not set properly')
+# Ensure download directory exists
+os.makedirs(download_path, exist_ok=True)
 
 
 FFmpegPostProcessor._ffmpeg_location.set(ffmpeg_location)

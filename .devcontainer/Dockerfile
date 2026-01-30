@@ -22,23 +22,5 @@ RUN python3 -m pip install --upgrade \
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y install --no-install-recommends ffmpeg
 
-COPY --from=docker.io/astral/uv:latest /uv /usr/local/bin/uv
-
-# Set the working directory inside the container
-WORKDIR /usr/app
-
-# Copy the FastAPI app code to the container
-COPY main.py /usr/app
-COPY pyproject.toml /usr/app
-
-RUN uv sync
-
-ENV PORT 80
-ENV DOWNLOAD_PATH /usr/downloads
-ENV FFMPEG_LOCATION /usr/bin/ffmpeg
-
-# Expose the port on which the FastAPI app will run
-EXPOSE $PORT
-
-# Set the command to run the FastAPI app when the container starts
-ENTRYPOINT uvicorn main:app --host 0.0.0.0 --port $PORT
+# [Optional] Uncomment this line to install global node packages.
+# RUN su vscode -c "source /usr/local/share/nvm/nvm.sh && npm install -g <your-package-here>" 2>&1
