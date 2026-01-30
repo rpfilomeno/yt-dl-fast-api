@@ -1,10 +1,11 @@
 import os
+import mimetypes
 import random
 import yt_dlp
 import time
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.exceptions import HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from yt_dlp.postprocessor import FFmpegPostProcessor
@@ -16,6 +17,10 @@ ffmpeg_location = os.environ.get('FFMPEG_LOCATION') or '/usr/bin/ffmpeg'
 
 # Ensure download directory exists
 os.makedirs(download_path, exist_ok=True)
+
+# Add custom mimetypes
+mimetypes.add_type('text/vtt', '.vtt')
+mimetypes.add_type('text/plain', '.srt')
 
 
 FFmpegPostProcessor._ffmpeg_location.set(ffmpeg_location)
@@ -42,9 +47,14 @@ def health():
 
 
 @app.get("/api/download/{url:path}")
-def download_video(url: str):
+def download_video(url: str, request: Request):
+    # Reconstruct the URL if query parameters were split
+    full_url = url
+    if request.query_params:
+        full_url = f"{url}?{request.query_params}"
+    
     file_name = f'{generate_random_file_name()}.m4a'
-    urls = [url]
+    urls = [full_url]
     ydl_opts = {
         'outtmpl': {
             'default': "/".join([download_path, file_name]),
@@ -65,14 +75,19 @@ def download_video(url: str):
         raise HTTPException(506, detail="download failed for internal server error")
 
 @app.get("/api/transcript/{url:path}")
-def get_transcripts(url: str):
+def get_transcripts(url: str, request: Request):
+    # Reconstruct the URL if query parameters were split
+    full_url = url
+    if request.query_params:
+        full_url = f"{url}?{request.query_params}"
+    
     file_name_prefix = generate_random_file_name()
     ydl_opts = {
         'outtmpl': os.path.join(download_path, f"{file_name_prefix}"),
         'skip_download': True,
         'writesubtitles': True,
         'writeautomaticsub': True,
-        'subtitleslangs': ['en.*'],
+        'subtitleslangs': ['en'],
         'postprocessors': [{
             'key': 'FFmpegSubtitlesConvertor',
             'format': 'srt',
@@ -81,7 +96,7 @@ def get_transcripts(url: str):
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        error_code = ydl.download([url])
+        error_code = ydl.download([full_url])
 
     if error_code == 0:
         # Check for files starting with file_name_prefix
@@ -104,4 +119,14 @@ def download_file(filename: str):
     file_path = os.path.join(download_path, filename)
     if not os.path.exists(file_path):
         raise HTTPException(404, detail="File not found")
-    return FileResponse(file_path, media_type="audio/m4a")
+    
+    if filename.endswith(".vtt"):
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        return Response(content=content, media_type="text/plain")
+    
+    content_type, _ = mimetypes.guess_type(file_path)
+    if not content_type:
+        content_type = "application/octet-stream"
+        
+    return FileResponse(file_path, media_type=content_type)
