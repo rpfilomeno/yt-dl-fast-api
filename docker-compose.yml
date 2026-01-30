@@ -1,0 +1,21 @@
+name: yt-dl-fastapi
+services:
+  yt-dl-fastapi:
+    ports:
+        - 8070:8000
+    image: rpfilomeno/yt-dlp-fast-api:latest
+    environment:
+        - TZ=Asia/Manila
+    networks:
+      - local-services
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
+
+networks:
+  local-services:
+    # Specify driver options
+    driver: bridge
+    external: true

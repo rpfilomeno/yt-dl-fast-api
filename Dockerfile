@@ -24,14 +24,20 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
 
 COPY --from=docker.io/astral/uv:latest /uv /usr/local/bin/uv
 
+SHELL ["/bin/bash", "-c"]
+
 # Set the working directory inside the container
 WORKDIR /workspaces
 COPY main.py /workspaces
 COPY pyproject.toml /workspaces
 COPY README.md /workspaces
 
-RUN uv sync
 
+RUN uv venv
+RUN uv sync
+RUN source .venv/bin/activate
+
+ENV PATH="/workspaces/.venv/bin:$PATH"
 ENV PORT=8000
 ENV DOWNLOAD_PATH=/workspaces/downloads
 ENV FFMPEG_LOCATION=/usr/bin/ffmpeg
@@ -40,4 +46,5 @@ ENV FFMPEG_LOCATION=/usr/bin/ffmpeg
 EXPOSE $PORT
 
 # Set the command to run the FastAPI app when the container starts
-ENTRYPOINT ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "$PORT"]
+CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0"]
+
