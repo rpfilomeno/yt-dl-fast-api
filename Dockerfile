@@ -33,8 +33,8 @@ COPY pyproject.toml /usr/app
 
 RUN uv sync
 
-ENV PORT 80
-ENV DOWNLOAD_PATH /usr/downloads
+ENV PORT 8000
+ENV DOWNLOAD_PATH /usr/appdownloads
 ENV FFMPEG_LOCATION /usr/bin/ffmpeg
 
 # Expose the port on which the FastAPI app will run

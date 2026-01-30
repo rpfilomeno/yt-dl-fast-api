@@ -8,32 +8,32 @@ This project demonstrates how to build a simple API using `FastAPI` and the `yt-
 
 ### Prerequisites
 To run this project, you need the following dependencies installed on your system:
-- Python 3.7+
+- Python 3.10+
 - FFmpeg
+- UV (https://github.com/astral-sh/uv)
 
 
 ### Standalone Installation Guide
 1. Clone the repository
    ```shell
-    git clone https://github.com/nil1729/yt-dl-fast-api.git
+    git clone https://github.com/rpfilomeno/yt-dl-fast-api.git
    ```
 2. Create a virtual environment
    ```shell
-    python3 -m venv venv
+    uv venv
     source venv/bin/activate
    ```
 3. Install the dependencies
-   ```shell
-    pip3 install -r requirements.txt
+    uv sync
    ```
-4. Set Environment Variables
+4. Set Environment Variables (optional)
    ```shell
-    export DOWNLOAD_PATH="/path/to/downloads/directory"
-    export PORT=9090
+    export DOWNLOAD_PATH="/usr/app/downloads"
+    export PORT=8000
     export FFMPEG_LOCATION="ffmpeg/bin/path"
    ```
 5. Start the FastAPI server:
-   ```shell
+   
     uvicorn main:app --host 0.0.0.0 --port $PORT
    ```
 
